@@ -67,3 +67,15 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+
+*.exe
+*.exp
+*.lib
+*.pdb
+x64/
+Debug/
+Release/
+.vs/
+*.ncu-rep
+*.nsys-rep
