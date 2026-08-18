@@ -1,6 +1,11 @@
 #include <cstdio>
 #include <cuda_runtime.h>
 
+
+void __global__ threadIdentity() {
+	printf("Thread ID: %d\n", threadIdx.x);
+}
+
 int main() {
 	int count;
 	cudaError_t err = cudaGetDeviceCount(&count);
@@ -29,5 +34,21 @@ int main() {
 		printf("  Bus width            : %d bits\n", buswidth);
 	}
 	
+
+	threadIdentity << <1, 4 >> > ();
+
+	err = cudaGetLastError();
+	if (err != cudaSuccess) {
+		printf("Error launching kernel: %s\n", cudaGetErrorString(err));
+		return 1;
+	}
+
+	err = cudaDeviceSynchronize();
+	if (err != cudaSuccess) {
+		printf("Error synchronizing device: %s\n", cudaGetErrorString(err));
+		return 1;
+	}
+
+	printf("Kernel execution completed successfully.\n");
 	return 0;
 }
