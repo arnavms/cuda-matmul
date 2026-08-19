@@ -1,5 +1,14 @@
 #include <cstdio>
 #include <cuda_runtime.h>
+#include <cmath>
+
+#define CUDA_CHECK(call) do { \
+	cudaError_t e = (call); \
+	if (e != cudaSuccess) { \
+		printf("CUDA error %s:%d: %s\n", __FILE__, __LINE__, cudaGetErrorString(e)); \
+		exit(1); \
+	} \
+} while(0)
 
 
 void __global__ threadIdentity() {
@@ -48,7 +57,8 @@ int main() {
 		printf("Error synchronizing device: %s\n", cudaGetErrorString(err));
 		return 1;
 	}
+	
+	printf("Thread Kernel executed successfully.\n");
 
-	printf("Kernel execution completed successfully.\n");
 	return 0;
 }
