@@ -1,6 +1,13 @@
 #include <cstdio>
 #include <cuda_runtime.h>
 
+#define CUDA_CHECK(call) do { \
+    cudaError_t e = (call); \
+    if (e != cudaSuccess) { \
+        printf("CUDA error %s:%d: %s\n", __FILE__, __LINE__, cudaGetErrorString(e)); \
+        exit(1); \
+    } \
+} while(0)
 
 #define N 1000000
 
@@ -23,9 +30,9 @@ int main() {
 
 	// allocate mem in gpu
 	double *d_A, *d_B, *d_C;
-	cudaMalloc(&d_A, totalBytes);
-	cudaMalloc(&d_B, totalBytes);
-	cudaMalloc(&d_C, totalBytes);
+	CUDA_CHECK(cudaMalloc(&d_A, totalBytes));
+	CUDA_CHECK(cudaMalloc(&d_B, totalBytes));
+	CUDA_CHECK(cudaMalloc(&d_C, totalBytes));
 
 
 	// fill arrays A and B
@@ -34,15 +41,17 @@ int main() {
 		B[i] = i * 2;
 	}
 
-	// copy data from ram to gpu via pcie
-	cudaMemcpy(d_A, A, totalBytes, cudaMemcpyHostToDevice);
-	cudaMemcpy(d_B, B, totalBytes, cudaMemcpyHostToDevice);
+	// copy data from ram to gpu via 
+	CUDA_CHECK(cudaMemcpy(d_A, A, totalBytes, cudaMemcpyHostToDevice));
+	CUDA_CHECK(cudaMemcpy(d_B, B, totalBytes, cudaMemcpyHostToDevice));
 
 	int thr_per_blk = 256; // number of threads per block
 	int blk_in_grid = (N + thr_per_blk - 1) / thr_per_blk; // number of blocks in grid
 
 	// call kernel
 	add_vectors << <blk_in_grid, thr_per_blk >> > (d_A, d_B, d_C);
+	CUDA_CHECK(cudaGetLastError());
+	CUDA_CHECK(cudaDeviceSynchronize());
 
 	// copy result from gpu to ram
 	cudaMemcpy(C, d_C, totalBytes, cudaMemcpyDeviceToHost);
