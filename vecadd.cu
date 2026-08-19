@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cuda_runtime.h>
+#include <cmath>
 
 #define CUDA_CHECK(call) do { \
     cudaError_t e = (call); \
@@ -54,26 +55,27 @@ int main() {
 	CUDA_CHECK(cudaDeviceSynchronize());
 
 	// copy result from gpu to ram
-	cudaMemcpy(C, d_C, totalBytes, cudaMemcpyDeviceToHost);
+	CUDA_CHECK(cudaMemcpy(C, d_C, totalBytes, cudaMemcpyDeviceToHost));
 
 	// check accuracy
 	for (int i = 0; i < N; i++) {
-		if (C[i] != A[i] + B[i]) {
-			printf("Error at index %d: %f != %f + %f\n", i, C[i], A[i], B[i]);
-			break;
+		if (fabs(C[i] - (A[i] + B[i])) > 1e-9) {
+			printf("\nError: value of C[%d] = %f instead of %f\n\n", i, C[i], A[i] + B[i]);
+			exit(1);
 		}
 	}
-
-	// free all mem
-	free(A);
-	free(B);
-	free(C);
-
-	cudaFree(d_A);
-	cudaFree(d_B);
-	cudaFree(d_C);
 
 	printf("Threads per block: %d\n", thr_per_blk);
 	printf("Blocks in grid: %d\n", blk_in_grid);
 	printf("Vector addition completed successfully.\n");
+	
+	// free all mem
+	free(A);
+	free(B);
+	free(C);
+	CUDA_CHECK(cudaFree(d_A));
+	CUDA_CHECK(cudaFree(d_B));
+	CUDA_CHECK(cudaFree(d_C));
+
+	
 }
